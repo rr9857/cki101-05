@@ -10,7 +10,7 @@ services:
     
     # Port 映射 [主機Port]:[容器Port]
     ports:
-      - "8000:5000"
+      - "80:5000"
     
     # 設定環境變數（讓 Flask 輸出日誌時不快取，方便在終端機直接看 log）
     environment:
