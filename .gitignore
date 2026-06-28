@@ -1,0 +1,9 @@
+# Python 暫存
+__pycache__/
+*.pyc
+
+# uv 虛擬環境
+.venv/
+
+# Docker 暫存
+.dockerignore

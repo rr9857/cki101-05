@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    # 指定 Dockerfile 所在的目錄（. 代表當前目錄）
+    build: .
+    
+    # 容器名稱
+    container_name: flask_container_uv
+    
+    # Port 映射 [主機Port]:[容器Port]
+    ports:
+      - "8000:5000"
+    
+    # 設定環境變數（讓 Flask 輸出日誌時不快取，方便在終端機直接看 log）
+    environment:
+      - PYTHONUNBUFFERED=1
+    
+    # 設定自動重啟策略（如果容器崩潰會自動重啟）
+    restart: unless-stopped
