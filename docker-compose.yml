@@ -1,20 +1,31 @@
-version: '3.8'
-
 services:
   web:
-    # 指定 Dockerfile 所在的目錄（. 代表當前目錄）
     build: .
-    
-    # 容器名稱
     container_name: flask_container_uv
-    
-    # Port 映射 [主機Port]:[容器Port]
     ports:
-      - "80:5000"
-    
-    # 設定環境變數（讓 Flask 輸出日誌時不快取，方便在終端機直接看 log）
+      - "8000:5000"
     environment:
       - PYTHONUNBUFFERED=1
-    
-    # 設定自動重啟策略（如果容器崩潰會自動重啟）
+      # 💡 注入容器內部的連線資訊：連向服務名稱 'db'，Port 走內部的 3306
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=cki101_user
+      - DB_PASSWORD=user_password_here
+      - DB_NAME=cki101_db
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.4
+    container_name: mysql_cki101
+    ports:
+      - "8625:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_here
+      MYSQL_DATABASE: cki101_db
+      MYSQL_USER: cki101_user
+      MYSQL_PASSWORD: user_password_here
+    volumes:
+      - ./db_data:/var/lib/mysql
     restart: unless-stopped

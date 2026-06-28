@@ -4,6 +4,9 @@ __pycache__/
 
 # uv 虛擬環境
 .venv/
+.env
 
 # Docker 暫存
 .dockerignore
+# 排除本地端的 MySQL 實體資料夾
+db_data/
