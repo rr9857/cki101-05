@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template_string
+from google.cloud import storage  # 🚀 引入 GCP Storage 套件
 from flask_sqlalchemy import SQLAlchemy
 import os
 
@@ -189,6 +190,101 @@ def manage_user():
         db.session.delete(user)
         db.session.commit()
         return jsonify({"message": f"User {user_id} deleted successfully"})
+# 🎨 /gcp 頁面的前端 UI 範本
+GCP_TEMPLATE = """
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCP Cloud Storage 瀏覽器</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container mt-5" style="max-width: 800px;">
+        <h2 class="mb-4 text-center text-success">☁️ GCP Cloud Storage 瀏覽器</h2>
+        
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white">🔍 查詢專案儲存桶 (Buckets)</div>
+            <div class="card-body">
+                <form method="POST" action="/gcp" class="row g-3">
+                    <div class="col-md-9">
+                        <label class="form-label">GCP Project ID</label>
+                        <input type="text" name="project_id" class="form-control" 
+                               placeholder="例如: cki101-project-123456" 
+                               value="{{ project_id }}" required>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">開始查詢</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
+        {% if error_msg %}
+        <div class="alert alert-danger" role="alert">
+            ❌ 錯誤原因：{{ error_msg }}
+        </div>
+        {% endif %}
+
+        {% if buckets is not none %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">📦 該專案下的 Buckets 清單 (共 {{ buckets|length }} 個)</div>
+            <div class="card-body">
+                {% if buckets|length == 0 %}
+                    <p class="text-muted text-center my-3">此專案下目前沒有任何 Cloud Storage Bucket。</p>
+                {% else %}
+                    <ul class="list-group">
+                        {% for bucket in buckets %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                🪣 <strong class="text-secondary">{{ bucket.name }}</strong>
+                            </div>
+                            <span class="badge bg-info text-dark">儲存級別: {{ bucket.storage_class }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+# ==========================================
+# 🚀 全新追加的 /gcp 路由
+# ==========================================
+@app.route('/gcp', methods=['GET', 'POST'])
+def view_gcp_storage():
+    project_id = ""
+    buckets_list = None
+    error_msg = None
+
+    if request.method == 'POST':
+        project_id = request.form.get('project_id', '').strip()
+        
+        try:
+            # 💡 核心：使用標準 ADC 機制初始化 Storage Client
+            # 它會自動去抓你系統註冊的憑證，並指向你輸入的 project_id
+            storage_client = storage.Client(project=project_id)
+            
+            # 撈取該專案內的所有 buckets
+            buckets = storage_client.list_buckets()
+            
+            # 將結果轉為 list 傳給前端
+            buckets_list = [b for b in buckets]
+            
+        except Exception as e:
+            error_msg = str(e)
+
+    # 渲染網頁並把資料帶進去
+    return render_template_string(
+        GCP_TEMPLATE, 
+        project_id=project_id, 
+        buckets=buckets_list, 
+        error_msg=error_msg
+    )
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
